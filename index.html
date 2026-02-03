@@ -142,47 +142,59 @@
         const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ_Gi48boVKmhDzM_eTo20i9pVlJ4Q9sue3uQ31FMb5B8Oq-c04diYAIDVfLaznJjQ34tey6h2WHtI5/pub?gid=0&single=true&output=csv';
 
         async function findCandidates() {
-            const address = document.getElementById('addressInput').value;
-            const resultsDiv = document.getElementById('results');
-            const loadingDiv = document.getElementById('loading');
-            
-            if (!address) return alert("Please enter an address");
+    const address = document.getElementById('addressInput').value;
+    const resultsDiv = document.getElementById('results');
+    const loadingDiv = document.getElementById('loading');
+    
+    if (!address) return alert("Please enter an address");
 
-            resultsDiv.innerHTML = '';
-            loadingDiv.style.display = 'block';
+    resultsDiv.innerHTML = '';
+    loadingDiv.style.display = 'block';
 
-            try {
-                // Step 1: Fetch our endorsed candidates from Google Sheets
-                const sheetResponse = await fetch(SHEET_CSV_URL);
-                const csvText = await sheetResponse.text();
-                const endorsedCandidates = parseCSV(csvText);
+    try {
+        // Step 1: Fetch Endorsements (Add error check for Sheet)
+        const sheetResponse = await fetch(SHEET_CSV_URL);
+        if (!sheetResponse.ok) throw new Error(`Failed to fetch Google Sheet (${sheetResponse.status})`);
+        const csvText = await sheetResponse.text();
+        const endorsedCandidates = parseCSV(csvText);
 
-                // Step 2: Ask Google where this address lives (District Matching)
-                const civicUrl = `https://www.googleapis.com/civicinfo/v2/representatives?address=${encodeURIComponent(address)}&includeOffices=false&key=${GOOGLE_API_KEY}`;
-                const civicResponse = await fetch(civicUrl);
-                const civicData = await civicResponse.json();
+        // Step 2: Ask Google (With better error handling)
+        const civicUrl = `https://www.googleapis.com/civicinfo/v2/representatives?address=${encodeURIComponent(address)}&includeOffices=false&key=${GOOGLE_API_KEY}`;
+        
+        const civicResponse = await fetch(civicUrl);
+        const civicData = await civicResponse.json();
 
-                if (!civicData.divisions) {
-                    throw new Error("Could not find districts for this address.");
-                }
-
-                // Step 3: Match! 
-                // Check if any endorsed candidate's OCDID exists in the user's divisions
-                const matches = endorsedCandidates.filter(candidate => {
-                    // Normalize OCD IDs (sometimes they have slashes at end)
-                    const cleanID = candidate.OCDID.trim();
-                    return civicData.divisions[cleanID] !== undefined;
-                });
-
-                displayResults(matches);
-
-            } catch (error) {
-                console.error(error);
-                resultsDiv.innerHTML = `<div class="no-results">Error: ${error.message}</div>`;
-            } finally {
-                loadingDiv.style.display = 'none';
-            }
+        // CHECK FOR GOOGLE API ERRORS SPECIFICALLY
+        if (civicData.error) {
+            console.error("Google API Error:", civicData.error);
+            throw new Error(`Google API Error: ${civicData.error.message} (Code: ${civicData.error.code})`);
         }
+
+        if (!civicData.divisions) {
+            throw new Error("Google returned no districts. Try a more specific address.");
+        }
+
+        // Step 3: Match
+        const matches = endorsedCandidates.filter(candidate => {
+            const cleanID = candidate.OCDID.trim();
+            // Debugging: Log what we are looking for vs what we found
+            // console.log(`Checking ${cleanID}... Found? ${!!civicData.divisions[cleanID]}`);
+            return civicData.divisions[cleanID] !== undefined;
+        });
+
+        displayResults(matches);
+
+    } catch (error) {
+        console.error(error);
+        // Show the ACTUAL error message on screen to help debug
+        resultsDiv.innerHTML = `<div class="no-results" style="color: #c0392b;">
+            <strong>System Error:</strong> ${error.message}<br>
+            <small>Open your browser console (F12) for more details.</small>
+        </div>`;
+    } finally {
+        loadingDiv.style.display = 'none';
+    }
+}
 
         function displayResults(candidates) {
             const container = document.getElementById('results');
