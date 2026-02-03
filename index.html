@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unity Rising USA - Candidate Endorsements</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;500;700;900&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --brand-font: 'DM Sans', sans-serif;
+            --brand-color: #2c3e50; /* Replace with your specific Unity Rising blue/red */
+            --accent-color: #e74c3c;
+        }
+
+        body {
+            font-family: var(--brand-font);
+            margin: 0;
+            padding: 20px;
+            background-color: transparent; /* Transparent for iframe blending */
+        }
+
+        /* Search Box Styling */
+        .search-container {
+            max-width: 600px;
+            margin: 0 auto 30px auto;
+            display: flex;
+            gap: 10px;
+        }
+
+        input[type="text"] {
+            flex-grow: 1;
+            padding: 12px;
+            border: 2px solid #ccc;
+            border-radius: 6px;
+            font-family: var(--brand-font);
+            font-size: 16px;
+        }
+
+        button {
+            padding: 12px 24px;
+            background-color: var(--brand-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 16px;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        /* Results Grid */
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        /* Candidate Card */
+        .candidate-card {
+            background: white;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .candidate-photo {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background-color: #eee;
+            object-fit: cover;
+            margin-bottom: 15px;
+        }
+
+        .candidate-name {
+            font-weight: 900; /* Matching your preference for heavy weights */
+            font-size: 1.25rem;
+            margin: 0 0 5px 0;
+            color: var(--brand-color);
+        }
+
+        .candidate-office {
+            font-weight: 500;
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .candidate-blurb {
+            font-size: 0.95rem;
+            line-height: 1.5;
+            color: #444;
+        }
+        
+        .no-results {
+            text-align: center;
+            grid-column: 1 / -1;
+            color: #666;
+            margin-top: 20px;
+        }
+        
+        .loading {
+            text-align: center;
+            display: none;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="search-container">
+        <input type="text" id="addressInput" placeholder="Enter your full address (Street, City, Zip)">
+        <button onclick="findCandidates()">Find Candidates</button>
+    </div>
+
+    <div id="loading" class="loading">Searching district maps...</div>
+    <div id="results" class="results-grid"></div>
+
+    <script>
+        // CONFIGURATION
+        // 1. Get your API Key from Google Cloud Console (Enable Civic Info API)
+        const GOOGLE_API_KEY = 'AIzaSyDnGniYDB8m3w7vHeqjbOOkyD49UzOkh4g'; 
+        
+        // 2. Publish your Google Sheet to Web (File > Share > Publish to Web > CSV)
+        const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ_Gi48boVKmhDzM_eTo20i9pVlJ4Q9sue3uQ31FMb5B8Oq-c04diYAIDVfLaznJjQ34tey6h2WHtI5/pub?gid=0&single=true&output=csv';
+
+        async function findCandidates() {
+            const address = document.getElementById('addressInput').value;
+            const resultsDiv = document.getElementById('results');
+            const loadingDiv = document.getElementById('loading');
+            
+            if (!address) return alert("Please enter an address");
+
+            resultsDiv.innerHTML = '';
+            loadingDiv.style.display = 'block';
+
+            try {
+                // Step 1: Fetch our endorsed candidates from Google Sheets
+                const sheetResponse = await fetch(SHEET_CSV_URL);
+                const csvText = await sheetResponse.text();
+                const endorsedCandidates = parseCSV(csvText);
+
+                // Step 2: Ask Google where this address lives (District Matching)
+                const civicUrl = `https://www.googleapis.com/civicinfo/v2/representatives?address=${encodeURIComponent(address)}&includeOffices=false&key=${GOOGLE_API_KEY}`;
+                const civicResponse = await fetch(civicUrl);
+                const civicData = await civicResponse.json();
+
+                if (!civicData.divisions) {
+                    throw new Error("Could not find districts for this address.");
+                }
+
+                // Step 3: Match! 
+                // Check if any endorsed candidate's OCDID exists in the user's divisions
+                const matches = endorsedCandidates.filter(candidate => {
+                    // Normalize OCD IDs (sometimes they have slashes at end)
+                    const cleanID = candidate.OCDID.trim();
+                    return civicData.divisions[cleanID] !== undefined;
+                });
+
+                displayResults(matches);
+
+            } catch (error) {
+                console.error(error);
+                resultsDiv.innerHTML = `<div class="no-results">Error: ${error.message}</div>`;
+            } finally {
+                loadingDiv.style.display = 'none';
+            }
+        }
+
+        function displayResults(candidates) {
+            const container = document.getElementById('results');
+            
+            if (candidates.length === 0) {
+                container.innerHTML = `<div class="no-results">
+                    <h3>No endorsements found in your area yet.</h3>
+                    <p>We are constantly adding new endorsements. Check back closer to election day!</p>
+                </div>`;
+                return;
+            }
+
+            candidates.forEach(cand => {
+                const card = document.createElement('div');
+                card.className = 'candidate-card';
+                // Handle missing photos gracefully
+                const photoSrc = cand.Photo && cand.Photo.startsWith('http') 
+                    ? cand.Photo 
+                    : 'https://via.placeholder.com/100?text=Unity';
+
+                card.innerHTML = `
+                    <img src="${photoSrc}" alt="${cand.Name}" class="candidate-photo">
+                    <h3 class="candidate-name">${cand.Name}</h3>
+                    <div class="candidate-office">${cand.Office}</div>
+                    <div class="candidate-blurb">${cand.Blurb}</div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Simple CSV Parser (Assumes no commas inside the cell text)
+        function parseCSV(text) {
+            const lines = text.split('\n').filter(l => l.trim());
+            const headers = lines[0].split(',').map(h => h.trim());
+            
+            return lines.slice(1).map(line => {
+                const values = line.split(','); // simpler split
+                // Map headers to values
+                let obj = {};
+                headers.forEach((h, i) => {
+                    // Remove quotes if present
+                    let val = values[i] || '';
+                    obj[h] = val.replace(/^"|"$/g, '').trim(); 
+                });
+                return obj;
+            });
+        }
+    </script>
+</body>
+</html>
