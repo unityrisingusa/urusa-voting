@@ -141,7 +141,7 @@
         // 2. Publish your Google Sheet to Web (File > Share > Publish to Web > CSV)
         const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ_Gi48boVKmhDzM_eTo20i9pVlJ4Q9sue3uQ31FMb5B8Oq-c04diYAIDVfLaznJjQ34tey6h2WHtI5/pub?gid=0&single=true&output=csv';
 
-async function findCandidates() {
+    async function findCandidates() {
             const address = document.getElementById('addressInput').value;
             const resultsDiv = document.getElementById('results');
             const loadingDiv = document.getElementById('loading');
@@ -160,7 +160,7 @@ async function findCandidates() {
 
                 // Step 2: Ask Google (THE CORRECT 2025/2026 ENDPOINT)
                 // We use 'divisionsByAddress' which was introduced to replace the old representatives lookup
-                const civicUrl = `https://civicinfo.googleapis.com/civicinfo/v2/divisionsByAddress?address=${encodeURIComponent(address)}&key=${GOOGLE_API_KEY}`;
+                const civicUrl = `https://civicinfo.googleapis.com/civicinfo/v2/voterinfo?address=${encodeURIComponent(address)}&electionId=2000&key=${GOOGLE_API_KEY}`;
                 
                 const civicResponse = await fetch(civicUrl);
                 
