@@ -133,12 +133,12 @@
     <div id="loading" class="loading">Searching district maps...</div>
     <div id="results" class="results-grid"></div>
 
-    <script>
+<script>
         // CONFIGURATION
-        // 1. Get your API Key from Google Cloud Console (Enable Civic Info API)
+        // 1. API Key
         const GOOGLE_API_KEY = 'AIzaSyDnGniYDB8m3w7vHeqjbOOkyD49UzOkh4g'; 
         
-        // 2. Publish your Google Sheet to Web (File > Share > Publish to Web > CSV)
+        // 2. Google Sheet Published to Web
         const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ_Gi48boVKmhDzM_eTo20i9pVlJ4Q9sue3uQ31FMb5B8Oq-c04diYAIDVfLaznJjQ34tey6h2WHtI5/pub?gid=0&single=true&output=csv';
 
     async function findCandidates() {
@@ -158,10 +158,10 @@
                 const csvText = await sheetResponse.text();
                 const endorsedCandidates = parseCSV(csvText);
 
-                // Step 2: Ask Google (The Robust "Geocode-Only" Method)
-                // We use electionId=0 (Default) and returnAllAvailableData=true
-                // This forces Google to return district info even if no election is scheduled.
-                const civicUrl = `https://civicinfo.googleapis.com/civicinfo/v2/voterinfo?address=${encodeURIComponent(address)}&electionId=0&returnAllAvailableData=true&key=${GOOGLE_API_KEY}`;
+                // Step 2: Ask Google (THE "FIND DIVISIONS" ENDPOINT)
+                // This is the specific replacement for the dead Representatives API.
+                // It returns the OCD-IDs for an address without needing an election.
+                const civicUrl = `https://civicinfo.googleapis.com/civicinfo/v2/divisionsByAddress?address=${encodeURIComponent(address)}&key=${GOOGLE_API_KEY}`;
                 
                 const civicResponse = await fetch(civicUrl);
                 
@@ -177,21 +177,17 @@
 
                 const civicData = await civicResponse.json();
 
-                // Step 3: Handle "Empty" Responses Gracefully
-                // If Google finds the address but no political data, it might omit 'divisions'.
+                // Step 3: Handle "Empty" Responses
                 if (!civicData.divisions) {
-                    // Fallback: Check if the address was even parsed
-                    if (civicData.normalizedInput) {
-                        throw new Error("Address found, but no district data available (API restriction).");
-                    } else {
-                        throw new Error("Could not find that address. Please try adding a Zip Code.");
-                    }
+                    throw new Error("Address found, but no district data returned. Try adding a Zip Code.");
                 }
 
                 // Step 4: Match
                 const matches = endorsedCandidates.filter(candidate => {
-                    if (!candidate.OCDID) return false; // Skip empty rows
+                    if (!candidate.OCDID) return false; 
                     const cleanID = candidate.OCDID.trim();
+                    // Debugging: Check matching
+                    // console.log(`Checking Endorsement: ${cleanID} ... Match? ${!!civicData.divisions[cleanID]}`);
                     return civicData.divisions[cleanID] !== undefined;
                 });
 
@@ -201,7 +197,7 @@
                 console.error(error);
                 resultsDiv.innerHTML = `<div class="no-results" style="color: #c0392b;">
                     <strong>System Error:</strong> ${error.message}<br>
-                    <small>If this persists, the address may be outside our covered districts.</small>
+                    <small>Check the Console (F12) for details.</small>
                 </div>`;
             } finally {
                 loadingDiv.style.display = 'none';
@@ -237,17 +233,15 @@
             });
         }
 
-        // Simple CSV Parser (Assumes no commas inside the cell text)
+        // Simple CSV Parser
         function parseCSV(text) {
             const lines = text.split('\n').filter(l => l.trim());
             const headers = lines[0].split(',').map(h => h.trim());
             
             return lines.slice(1).map(line => {
-                const values = line.split(','); // simpler split
-                // Map headers to values
+                const values = line.split(','); 
                 let obj = {};
                 headers.forEach((h, i) => {
-                    // Remove quotes if present
                     let val = values[i] || '';
                     obj[h] = val.replace(/^"|"$/g, '').trim(); 
                 });
@@ -255,5 +249,6 @@
             });
         }
     </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/iframe-resizer/4.3.2/iframeResizer.contentWindow.min.js"></script>
 </body>
 </html>
