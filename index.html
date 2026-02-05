@@ -158,30 +158,39 @@
                 const csvText = await sheetResponse.text();
                 const endorsedCandidates = parseCSV(csvText);
 
-                // Step 2: Ask Google (THE CORRECT 2025/2026 ENDPOINT)
-                // We use 'divisionsByAddress' which was introduced to replace the old representatives lookup
-                const civicUrl = `https://civicinfo.googleapis.com/civicinfo/v2/voterinfo?address=${encodeURIComponent(address)}&electionId=2000&key=${GOOGLE_API_KEY}`;
+                // Step 2: Ask Google (The Robust "Geocode-Only" Method)
+                // We use electionId=0 (Default) and returnAllAvailableData=true
+                // This forces Google to return district info even if no election is scheduled.
+                const civicUrl = `https://civicinfo.googleapis.com/civicinfo/v2/voterinfo?address=${encodeURIComponent(address)}&electionId=0&returnAllAvailableData=true&key=${GOOGLE_API_KEY}`;
                 
                 const civicResponse = await fetch(civicUrl);
                 
-                // Detailed Error Handling for Debugging
+                // Detailed Error Handling
                 if (!civicResponse.ok) {
-                    const errorText = await civicResponse.text(); // Get raw error text
+                    const errorText = await civicResponse.text(); 
                     let errorObj;
                     try { errorObj = JSON.parse(errorText); } catch(e) {}
                     
-                    const errorMessage = errorObj?.error?.message || errorText || civicResponse.statusText;
+                    const errorMessage = errorObj?.error?.message || civicResponse.statusText;
                     throw new Error(`Google API Error (${civicResponse.status}): ${errorMessage}`);
                 }
 
                 const civicData = await civicResponse.json();
 
+                // Step 3: Handle "Empty" Responses Gracefully
+                // If Google finds the address but no political data, it might omit 'divisions'.
                 if (!civicData.divisions) {
-                    throw new Error("Google returned no districts for this address.");
+                    // Fallback: Check if the address was even parsed
+                    if (civicData.normalizedInput) {
+                        throw new Error("Address found, but no district data available (API restriction).");
+                    } else {
+                        throw new Error("Could not find that address. Please try adding a Zip Code.");
+                    }
                 }
 
-                // Step 3: Match
+                // Step 4: Match
                 const matches = endorsedCandidates.filter(candidate => {
+                    if (!candidate.OCDID) return false; // Skip empty rows
                     const cleanID = candidate.OCDID.trim();
                     return civicData.divisions[cleanID] !== undefined;
                 });
@@ -192,7 +201,7 @@
                 console.error(error);
                 resultsDiv.innerHTML = `<div class="no-results" style="color: #c0392b;">
                     <strong>System Error:</strong> ${error.message}<br>
-                    <small>Check the Console (F12) for the exact API response.</small>
+                    <small>If this persists, the address may be outside our covered districts.</small>
                 </div>`;
             } finally {
                 loadingDiv.style.display = 'none';
