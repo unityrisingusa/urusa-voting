@@ -158,9 +158,8 @@
                 const csvText = await sheetResponse.text();
                 const endorsedCandidates = parseCSV(csvText);
 
-                // Step 2: Ask Google (THE "FIND DIVISIONS" ENDPOINT)
-                // This is the specific replacement for the dead Representatives API.
-                // It returns the OCD-IDs for an address without needing an election.
+                // Step 2: Ask Google (THE CORRECT 2026 ENDPOINT)
+                // Note: The endpoint is 'divisionsByAddress', NOT 'divisions' or 'representatives'
                 const civicUrl = `https://civicinfo.googleapis.com/civicinfo/v2/divisionsByAddress?address=${encodeURIComponent(address)}&key=${GOOGLE_API_KEY}`;
                 
                 const civicResponse = await fetch(civicUrl);
@@ -179,16 +178,27 @@
 
                 // Step 3: Handle "Empty" Responses
                 if (!civicData.divisions) {
+                    // Debugging: What DID Google return?
+                    console.warn("Google Response:", civicData);
                     throw new Error("Address found, but no district data returned. Try adding a Zip Code.");
                 }
+
+                // Debugging: Log the found districts to the console
+                const foundDistricts = Object.keys(civicData.divisions);
+                console.log("User is in these districts:", foundDistricts);
 
                 // Step 4: Match
                 const matches = endorsedCandidates.filter(candidate => {
                     if (!candidate.OCDID) return false; 
                     const cleanID = candidate.OCDID.trim();
-                    // Debugging: Check matching
-                    // console.log(`Checking Endorsement: ${cleanID} ... Match? ${!!civicData.divisions[cleanID]}`);
-                    return civicData.divisions[cleanID] !== undefined;
+                    
+                    // Check if the candidate's district is in the user's district list
+                    const isMatch = civicData.divisions[cleanID] !== undefined;
+                    
+                    // Optional: Log matches for debugging
+                    // if (isMatch) console.log(`Matched Candidate: ${candidate.Name}`);
+                    
+                    return isMatch;
                 });
 
                 displayResults(matches);
