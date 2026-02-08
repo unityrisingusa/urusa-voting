@@ -30,117 +30,55 @@
             gap: 10px;
         }
         input[type="text"] {
-
             flex-grow: 1;
-
             padding: 14px;
-
             border: 2px solid #ddd;
-
             border-radius: 8px;
-
             font-family: var(--brand-font);
-
             font-size: 16px;
-
         }
-
-
-
         button {
-
             padding: 14px 28px;
-
             background-color: var(--card-bg);
-
             color: white;
-
             border: none;
-
             border-radius: 8px;
-
             cursor: pointer;
-
             font-weight: 700;
-
             font-size: 16px;
-
             transition: opacity 0.2s;
-
         }
-
-
-
         button:hover { opacity: 0.9; }
-
-
-
         /* Results Grid */
-
         .results-grid {
-
             display: grid;
-
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-
             gap: 25px;
-
             max-width: 1200px;
-
             margin: 0 auto;
-
         }
-
-
-
         /* CARD DESIGN - Matches Uploaded Image */
-
         .candidate-card {
-
             background-color: var(--card-bg);
-
             color: var(--text-color);
-
             border-radius: 12px;
-
             padding: 30px 20px;
-
             display: flex;
-
             flex-direction: column;
-
             align-items: center;
-
             text-align: center;
-
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-
             position: relative;
-
         }
-
-
-
         .candidate-photo {
-
             width: 140px;
-
             height: 140px;
-
             border-radius: 50%;
-
             object-fit: cover;
-
             border: 4px solid white;
-
             margin-bottom: 20px;
-
             background-color: #eee;
-
         }
-
-
-
         .candidate-name {
             font-weight: 900;
             font-size: 2rem;
@@ -149,9 +87,6 @@
             overflow-wrap: break-word; /* Prevents long text from overflowing */
             hyphens: auto; /* Adds hyphens if a word is too long */
         }
-
-
-
         /* Badges Container */
         .badge-container {
             display: flex;
@@ -160,9 +95,6 @@
             gap: 8px;
             margin-bottom: 15px;
         }
-
-
-
         .badge {
             font-size: 0.75rem;
             font-weight: 700;
@@ -172,261 +104,108 @@
             letter-spacing: 0.5px;
             color: white;
             background: #444; /* Default fallback */
-
         }
-
-
-
         .badge-incumbent { background-color: #27ae60; } /* Green */
-
         .badge-critical { background-color: var(--badge-yellow); color: var(--badge-text-dark); }
-
         .badge-statewide { background-color: #1a252f; border: 1px solid #4a5568; }
-
-        
-
         /* The "Red to Blue" Gradient Badge */
-
         .badge-flip {
-
             background: linear-gradient(90deg, #c0392b 0%, #2980b9 100%);
-
         }
-
-
-
         .candidate-office {
-
             background-color: rgba(0,0,0,0.3);
-
             padding: 6px 12px;
-
             border-radius: 4px;
-
             font-weight: 700;
-
             font-size: 0.9rem;
-
             margin-bottom: 20px;
-
             text-transform: uppercase;
-
         }
-
-
-
         .candidate-blurb {
-
             font-size: 0.95rem;
-
             line-height: 1.5;
-
             margin-bottom: 25px;
-
             opacity: 0.95;
-
             flex-grow: 1; /* Pushes button to bottom */
-
         }
-
-
-
         .website-btn {
-
             background-color: var(--btn-blue);
-
             color: var(--badge-text-dark);
-
             text-decoration: none;
-
             padding: 12px 0;
-
             width: 100%;
-
             border-radius: 6px;
-
             font-weight: 700;
-
             text-transform: uppercase;
-
             letter-spacing: 1px;
-
             transition: background 0.2s;
-
         }
-
-        
-
         .website-btn:hover { background-color: #90cdf4; }
-
-        
-
         .no-results { grid-column: 1 / -1; text-align: center; color: #555; margin-top: 30px; }
-
         .loading { text-align: center; display: none; width: 100%; color: #555; }
-
     </style>
-
 </head>
-
 <body>
-
-
-
     <div class="search-container">
-
         <input type="text" id="addressInput" placeholder="Enter your full address (Street, City, Zip)">
-
         <button onclick="findCandidates()">Find Candidates</button>
-
     </div>
-
-
-
     <div id="loading" class="loading">Scanning district maps...</div>
-
     <div id="results" class="results-grid"></div>
-
-
-
     <script>
-
         // --- CONFIGURATION ---
-
         const GOOGLE_API_KEY = 'AIzaSyDnGniYDB8m3w7vHeqjbOOkyD49UzOkh4g'; 
-
         const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ_Gi48boVKmhDzM_eTo20i9pVlJ4Q9sue3uQ31FMb5B8Oq-c04diYAIDVfLaznJjQ34tey6h2WHtI5/pub?gid=0&single=true&output=csv';
-
-
-
         async function findCandidates() {
-
             const address = document.getElementById('addressInput').value;
-
             const resultsDiv = document.getElementById('results');
-
             const loadingDiv = document.getElementById('loading');
-
-            
-
             if (!address) return alert("Please enter an address");
-
-
-
             resultsDiv.innerHTML = '';
-
             loadingDiv.style.display = 'block';
-
-
-
             try {
-
                 // 1. Fetch Data
-
                 const sheetResponse = await fetch(SHEET_CSV_URL);
-
                 if (!sheetResponse.ok) throw new Error("Failed to load endorsements");
-
                 const csvText = await sheetResponse.text();
-
                 const endorsedCandidates = parseCSV(csvText);
-
-
-
                 // 2. Geocode Address (Using correct 2026 endpoint)
-
                 const civicUrl = `https://civicinfo.googleapis.com/civicinfo/v2/divisionsByAddress?address=${encodeURIComponent(address)}&key=${GOOGLE_API_KEY}`;
-
                 const civicResponse = await fetch(civicUrl);
-
-                
-
                 if (!civicResponse.ok) throw new Error("Google API Error");
-
                 const civicData = await civicResponse.json();
-
-                
-
                 if (!civicData.divisions) throw new Error("Address found, but no district info returned.");
-
-
-
                 // 3. Match & Filter
-
                 let matches = endorsedCandidates.filter(candidate => {
-
                     if (!candidate.OCDID) return false;
-
                     const cleanID = candidate.OCDID.trim();
-
                     return civicData.divisions[cleanID] !== undefined;
-
                 });
-
-
-
                 // 4. RANKING SORT (Top of Ticket Logic)
-
                 // Sorts by the 'Rank' column (Ascending: 1, 2, 3...)
-
                 matches.sort((a, b) => {
-
                     // Treat missing ranks as 999 (bottom)
-
                     const rankA = parseInt(a.Rank) || 999;
-
                     const rankB = parseInt(b.Rank) || 999;
-
                     return rankA - rankB;
-
                 });
-
-
-
                 displayResults(matches);
-
-
-
             } catch (error) {
-
                 console.error(error);
-
                 resultsDiv.innerHTML = `<div class="no-results">Error: ${error.message}</div>`;
-
             } finally {
-
                 loadingDiv.style.display = 'none';
-
             }
-
         }
-
-
-
         function displayResults(candidates) {
-
             const container = document.getElementById('results');
-
-            
-
             if (candidates.length === 0) {
-
                 container.innerHTML = `<div class="no-results"><h3>No endorsements in your area yet.</h3></div>`;
-
                 return;
-
             }
-
-
-
             candidates.forEach(cand => {
-
                 const card = document.createElement('div');
-
                 card.className = 'candidate-card';
-
-
-
                 // Handle Badges Logic
                 let badgesHTML = '';
                 // Helper to check boolean (Google Sheets CSV exports TRUE/FALSE as text)
@@ -465,12 +244,10 @@
         function parseCSV(text) {
             const lines = text.split('\n').filter(l => l.trim());
             const headers = lines[0].split(',').map(h => h.trim());
-            
             return lines.slice(1).map(line => {
                 // This magic pattern splits by commas, BUT ignores commas inside quotes.
                 // It also preserves empty fields (e.g., "Name,,Website" -> Name, "", Website)
                 const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-                
                 let obj = {};
                 headers.forEach((h, i) => {
                     let val = values[i] || '';
