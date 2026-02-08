@@ -487,123 +487,60 @@
 
 
                 // Handle Badges Logic
-
                 let badgesHTML = '';
-
-                
-
                 // Helper to check boolean (Google Sheets CSV exports TRUE/FALSE as text)
-
                 const isTrue = (val) => val && val.toUpperCase() === 'TRUE';
-
-
-
                 if (isTrue(cand.Incumbent)) {
-
                     badgesHTML += `<span class="badge badge-incumbent">Incumbent</span>`;
-
                 }
-
                 if (isTrue(cand.Critical_Race)) {
-
                     badgesHTML += `<span class="badge badge-critical">Critical Race</span>`;
-
                 }
-
                 if (isTrue(cand.Red_To_Blue)) {
-
                     badgesHTML += `<span class="badge badge-flip">Red to Blue Flip</span>`;
-
                 }
-
                 if (isTrue(cand.Statewide)) {
-
                     badgesHTML += `<span class="badge badge-statewide">Statewide</span>`;
-
                 }
-
-
-
                 const photoSrc = cand.Photo && cand.Photo.startsWith('http') 
-
                     ? cand.Photo 
-
                     : 'https://via.placeholder.com/150?text=No+Photo';
-
-
-
                 // Optional Website Button
-
                 const websiteHTML = cand.Website 
-
                     ? `<a href="${cand.Website}" target="_blank" class="website-btn">Website</a>` 
-
                     : '';
-
-
-
                 card.innerHTML = `
-
                     <img src="${photoSrc}" alt="${cand.Name}" class="candidate-photo">
-
                     <div class="badge-container">${badgesHTML}</div>
-
                     <h3 class="candidate-name">${cand.Name}</h3>
-
                     <div class="candidate-office">${cand.Office}</div>
-
                     <div class="candidate-blurb">${cand.Blurb}</div>
-
                     ${websiteHTML}
-
                 `;
-
                 container.appendChild(card);
-
             });
-
         }
-
-
-
+// Robust CSV Parser (Handles commas inside quotes AND spaces in names)
         function parseCSV(text) {
-
             const lines = text.split('\n').filter(l => l.trim());
-
             const headers = lines[0].split(',').map(h => h.trim());
-
             
-
             return lines.slice(1).map(line => {
-
-                // Regex to handle commas inside quotes (e.g. "Washington, DC")
-
-                const values = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
-
-                // Fallback for simpler split if regex fails on simple CSV
-
-                const simpleValues = line.split(',');
-
-
-
-                const finalValues = values.length >= headers.length ? values : simpleValues;
-
-
+                // This regex correctly identifies content within quotes OR content separated by commas
+                // It does NOT split on spaces anymore.
+                const matches = line.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g) || [];
+                
+                // Fallback: If regex fails, use simple split (works for simple data)
+                const values = matches.length > 0 ? matches : line.split(',');
 
                 let obj = {};
-
                 headers.forEach((h, i) => {
-
-                    let val = finalValues[i] || '';
-
+                    let val = values[i] || '';
+                    // Clean up quotes and extra whitespace around the value
                     obj[h] = val.replace(/^"|"$/g, '').trim(); 
-
                 });
-
                 return obj;
-
             });
-
         }
 
     </script>
