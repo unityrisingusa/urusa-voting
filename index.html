@@ -1,75 +1,34 @@
 <!DOCTYPE html>
-
 <html lang="en">
-
 <head>
-
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>Unity Rising USA - Endorsements</title>
-
-    
-
     <link rel="preconnect" href="https://fonts.googleapis.com">
-
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;900&display=swap" rel="stylesheet">
-
-
-
     <style>
-
         :root {
-
             --brand-font: 'DM Sans', sans-serif;
-
             --card-bg: #2b5596; /* Matches the blue in your image */
-
             --text-color: #ffffff;
-
             --badge-yellow: #f1c40f;
-
             --badge-text-dark: #2c3e50;
-
             --btn-blue: #63b3ed;
-
         }
-
-
-
         body {
-
             font-family: var(--brand-font);
-
             margin: 0;
-
             padding: 20px;
-
             background-color: transparent;
-
         }
-
-
-
         /* Search Box */
-
         .search-container {
-
             max-width: 600px;
-
             margin: 0 auto 30px auto;
-
             display: flex;
-
             gap: 10px;
-
         }
-
-
-
         input[type="text"] {
 
             flex-grow: 1;
@@ -508,27 +467,20 @@
             const headers = lines[0].split(',').map(h => h.trim());
             
             return lines.slice(1).map(line => {
-                // This regex correctly identifies content within quotes OR content separated by commas
-                // It does NOT split on spaces anymore.
-                const matches = line.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g) || [];
+                // This magic pattern splits by commas, BUT ignores commas inside quotes.
+                // It also preserves empty fields (e.g., "Name,,Website" -> Name, "", Website)
+                const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
                 
-                // Fallback: If regex fails, use simple split (works for simple data)
-                const values = matches.length > 0 ? matches : line.split(',');
-
                 let obj = {};
                 headers.forEach((h, i) => {
                     let val = values[i] || '';
-                    // Clean up quotes and extra whitespace around the value
+                    // Clean up quotes (remove surrounding "")
                     obj[h] = val.replace(/^"|"$/g, '').trim(); 
                 });
                 return obj;
             });
         }
-
     </script>
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/iframe-resizer/4.3.2/iframeResizer.contentWindow.min.js"></script>
-
 </body>
-
 </html>
