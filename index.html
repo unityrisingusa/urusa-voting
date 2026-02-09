@@ -4,41 +4,75 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Unity Rising USA - Endorsements</title>
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;900&display=swap" rel="stylesheet">
+
     <style>
         :root {
             --brand-font: 'DM Sans', sans-serif;
-            --card-bg: #2b5596; /* Matches the blue in your image */
+            --card-bg: #2b5596; 
             --text-color: #ffffff;
             --badge-yellow: #f1c40f;
             --badge-text-dark: #2c3e50;
             --btn-blue: #63b3ed;
+            --btn-donate: #bc5b76; /* High visibility red/orange for donations */
         }
+
         body {
             font-family: var(--brand-font);
             margin: 0;
             padding: 20px;
             background-color: transparent;
         }
-        /* Search Box */
-        .search-container {
-            max-width: 600px;
+
+        /* --- SEARCH FORM STYLING --- */
+        .search-form {
+            max-width: 750px;
             margin: 0 auto 30px auto;
-            display: flex;
-            gap: 10px;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            display: grid;
+            grid-template-columns: 1fr 140px 110px; 
+            gap: 15px;
         }
-        input[type="text"] {
-            flex-grow: 1;
-            padding: 14px;
+
+        .full-width { grid-column: 1 / -1; }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-group label {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #555;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        input[type="text"], select {
+            padding: 12px;
             border: 2px solid #ddd;
-            border-radius: 8px;
+            border-radius: 6px;
             font-family: var(--brand-font);
             font-size: 16px;
+            background-color: white;
+            transition: border-color 0.2s;
         }
-        button {
-            padding: 14px 28px;
+        
+        input[type="text"]:focus, select:focus {
+            border-color: var(--card-bg);
+            outline: none;
+        }
+
+        button.search-btn {
+            grid-column: 1 / -1;
+            padding: 14px;
             background-color: var(--card-bg);
             color: white;
             border: none;
@@ -46,9 +80,17 @@
             cursor: pointer;
             font-weight: 700;
             font-size: 16px;
+            margin-top: 10px;
             transition: opacity 0.2s;
         }
-        button:hover { opacity: 0.9; }
+
+        button.search-btn:hover { opacity: 0.9; }
+        
+        @media (max-width: 600px) {
+            .search-form { grid-template-columns: 1fr 1fr; }
+            .full-width-mobile { grid-column: 1 / -1; }
+        }
+
         /* Results Grid */
         .results-grid {
             display: grid;
@@ -57,7 +99,8 @@
             max-width: 1200px;
             margin: 0 auto;
         }
-        /* CARD DESIGN - Matches Uploaded Image */
+
+        /* CARD DESIGN */
         .candidate-card {
             background-color: var(--card-bg);
             color: var(--text-color);
@@ -70,6 +113,7 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             position: relative;
         }
+
         .candidate-photo {
             width: 140px;
             height: 140px;
@@ -79,15 +123,16 @@
             margin-bottom: 20px;
             background-color: #eee;
         }
+
         .candidate-name {
             font-weight: 900;
             font-size: 2rem;
             margin: 0 0 15px 0;
             line-height: 1.1;
-            overflow-wrap: break-word; /* Prevents long text from overflowing */
-            hyphens: auto; /* Adds hyphens if a word is too long */
+            overflow-wrap: break-word; 
+            hyphens: auto;
         }
-        /* Badges Container */
+
         .badge-container {
             display: flex;
             flex-wrap: wrap;
@@ -95,6 +140,7 @@
             gap: 8px;
             margin-bottom: 15px;
         }
+
         .badge {
             font-size: 0.75rem;
             font-weight: 700;
@@ -103,15 +149,14 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
             color: white;
-            background: #444; /* Default fallback */
+            background: #444; 
         }
-        .badge-incumbent { background-color: #27ae60; } /* Green */
+
+        .badge-incumbent { background-color: #27ae60; }
         .badge-critical { background-color: var(--badge-yellow); color: var(--badge-text-dark); }
         .badge-statewide { background-color: #1a252f; border: 1px solid #4a5568; }
-        /* The "Red to Blue" Gradient Badge */
-        .badge-flip {
-            background: linear-gradient(90deg, #c0392b 0%, #2980b9 100%);
-        }
+        .badge-flip { background: linear-gradient(90deg, #c0392b 0%, #2980b9 100%); }
+
         .candidate-office {
             background-color: rgba(0,0,0,0.3);
             padding: 6px 12px;
@@ -121,75 +166,156 @@
             margin-bottom: 20px;
             text-transform: uppercase;
         }
+
         .candidate-blurb {
             font-size: 0.95rem;
             line-height: 1.5;
             margin-bottom: 25px;
             opacity: 0.95;
-            flex-grow: 1; /* Pushes button to bottom */
+            flex-grow: 1; 
         }
-        .website-btn {
-            background-color: var(--btn-blue);
+
+        /* --- BUTTON GROUP FOR WEBSITE & DONATE --- */
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+            margin-top: auto; /* Pushes buttons to bottom of flex container */
+        }
+
+        .action-btn {
+            flex: 1; /* Makes buttons equal width */
             color: var(--badge-text-dark);
             text-decoration: none;
             padding: 12px 0;
-            width: 100%;
             border-radius: 6px;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: background 0.2s;
+            letter-spacing: 0.5px;
+            transition: transform 0.2s, opacity 0.2s;
+            display: inline-block;
+            font-size: 0.9rem;
         }
-        .website-btn:hover { background-color: #90cdf4; }
+        
+        .action-btn:hover {
+            transform: translateY(-2px);
+            opacity: 0.9;
+        }
+
+        .website-btn {
+            background-color: var(--btn-blue);
+        }
+
+        .donate-btn {
+            background-color: var(--btn-donate);
+            color: white; /* White text looks better on red */
+        }
+        
         .no-results { grid-column: 1 / -1; text-align: center; color: #555; margin-top: 30px; }
         .loading { text-align: center; display: none; width: 100%; color: #555; }
     </style>
 </head>
 <body>
-    <div class="search-container">
-        <input type="text" id="addressInput" placeholder="Enter your full address (Street, City, Zip)">
-        <button onclick="findCandidates()">Find Candidates</button>
+
+    <div class="search-form">
+        <div class="input-group full-width full-width-mobile">
+            <label>Street Address</label>
+            <input type="text" id="inputStreet" placeholder="e.g. 123 Main St">
+        </div>
+        <div class="input-group full-width-mobile">
+            <label>City</label>
+            <input type="text" id="inputCity" placeholder="e.g. Phoenix">
+        </div>
+        <div class="input-group">
+            <label>State</label>
+            <select id="inputState">
+                <option value="AL">AL</option><option value="AK">AK</option><option value="AZ" selected>AZ</option>
+                <option value="AR">AR</option><option value="CA">CA</option><option value="CO">CO</option>
+                <option value="CT">CT</option><option value="DE">DE</option><option value="DC">DC</option>
+                <option value="FL">FL</option><option value="GA">GA</option><option value="HI">HI</option>
+                <option value="ID">ID</option><option value="IL">IL</option><option value="IN">IN</option>
+                <option value="IA">IA</option><option value="KS">KS</option><option value="KY">KY</option>
+                <option value="LA">LA</option><option value="ME">ME</option><option value="MD">MD</option>
+                <option value="MA">MA</option><option value="MI">MI</option><option value="MN">MN</option>
+                <option value="MS">MS</option><option value="MO">MO</option><option value="MT">MT</option>
+                <option value="NE">NE</option><option value="NV">NV</option><option value="NH">NH</option>
+                <option value="NJ">NJ</option><option value="NM">NM</option><option value="NY">NY</option>
+                <option value="NC">NC</option><option value="ND">ND</option><option value="OH">OH</option>
+                <option value="OK">OK</option><option value="OR">OR</option><option value="PA">PA</option>
+                <option value="RI">RI</option><option value="SC">SC</option><option value="SD">SD</option>
+                <option value="TN">TN</option><option value="TX">TX</option><option value="UT">UT</option>
+                <option value="VT">VT</option><option value="VA">VA</option><option value="WA">WA</option>
+                <option value="WV">WV</option><option value="WI">WI</option><option value="WY">WY</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label>Zip</label>
+            <input type="text" id="inputZip" placeholder="e.g. 85001">
+        </div>
+        <button class="search-btn" onclick="findCandidates()">Find Candidates</button>
     </div>
+
     <div id="loading" class="loading">Scanning district maps...</div>
     <div id="results" class="results-grid"></div>
+
     <script>
         // --- CONFIGURATION ---
         const GOOGLE_API_KEY = 'AIzaSyDnGniYDB8m3w7vHeqjbOOkyD49UzOkh4g'; 
         const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ_Gi48boVKmhDzM_eTo20i9pVlJ4Q9sue3uQ31FMb5B8Oq-c04diYAIDVfLaznJjQ34tey6h2WHtI5/pub?gid=0&single=true&output=csv';
+
         async function findCandidates() {
-            const address = document.getElementById('addressInput').value;
+            // 1. GET VALUES FROM SEPARATE BOXES
+            const street = document.getElementById('inputStreet').value.trim();
+            const city = document.getElementById('inputCity').value.trim();
+            const state = document.getElementById('inputState').value;
+            const zip = document.getElementById('inputZip').value.trim();
+            
+            // 2. VALIDATION
+            if (!street || !city || !zip) {
+                return alert("Please fill in Street, City, and Zip Code.");
+            }
+
+            // 3. CONCATENATION
+            const fullAddress = `${street}, ${city}, ${state} ${zip}`;
+            
             const resultsDiv = document.getElementById('results');
             const loadingDiv = document.getElementById('loading');
-            if (!address) return alert("Please enter an address");
+            
             resultsDiv.innerHTML = '';
             loadingDiv.style.display = 'block';
+
             try {
-                // 1. Fetch Data
+                // Fetch Data
                 const sheetResponse = await fetch(SHEET_CSV_URL);
                 if (!sheetResponse.ok) throw new Error("Failed to load endorsements");
                 const csvText = await sheetResponse.text();
                 const endorsedCandidates = parseCSV(csvText);
-                // 2. Geocode Address (Using correct 2026 endpoint)
-                const civicUrl = `https://civicinfo.googleapis.com/civicinfo/v2/divisionsByAddress?address=${encodeURIComponent(address)}&key=${GOOGLE_API_KEY}`;
+
+                // Geocode Address
+                const civicUrl = `https://civicinfo.googleapis.com/civicinfo/v2/divisionsByAddress?address=${encodeURIComponent(fullAddress)}&key=${GOOGLE_API_KEY}`;
                 const civicResponse = await fetch(civicUrl);
+                
                 if (!civicResponse.ok) throw new Error("Google API Error");
                 const civicData = await civicResponse.json();
+                
                 if (!civicData.divisions) throw new Error("Address found, but no district info returned.");
-                // 3. Match & Filter
+
+                // Match & Filter
                 let matches = endorsedCandidates.filter(candidate => {
                     if (!candidate.OCDID) return false;
                     const cleanID = candidate.OCDID.trim();
                     return civicData.divisions[cleanID] !== undefined;
                 });
-                // 4. RANKING SORT (Top of Ticket Logic)
-                // Sorts by the 'Rank' column (Ascending: 1, 2, 3...)
+
+                // Sort by Rank
                 matches.sort((a, b) => {
-                    // Treat missing ranks as 999 (bottom)
                     const rankA = parseInt(a.Rank) || 999;
                     const rankB = parseInt(b.Rank) || 999;
                     return rankA - rankB;
                 });
+
                 displayResults(matches);
+
             } catch (error) {
                 console.error(error);
                 resultsDiv.innerHTML = `<div class="no-results">Error: ${error.message}</div>`;
@@ -197,61 +323,68 @@
                 loadingDiv.style.display = 'none';
             }
         }
+
         function displayResults(candidates) {
             const container = document.getElementById('results');
+            
             if (candidates.length === 0) {
                 container.innerHTML = `<div class="no-results"><h3>No endorsements in your area yet.</h3></div>`;
                 return;
             }
+
             candidates.forEach(cand => {
                 const card = document.createElement('div');
                 card.className = 'candidate-card';
-                // Handle Badges Logic
+
+                // Badges
                 let badgesHTML = '';
-                // Helper to check boolean (Google Sheets CSV exports TRUE/FALSE as text)
                 const isTrue = (val) => val && val.toUpperCase() === 'TRUE';
-                if (isTrue(cand.Incumbent)) {
-                    badgesHTML += `<span class="badge badge-incumbent">Incumbent</span>`;
-                }
-                if (isTrue(cand.Critical_Race)) {
-                    badgesHTML += `<span class="badge badge-critical">Critical Race</span>`;
-                }
-                if (isTrue(cand.Red_To_Blue)) {
-                    badgesHTML += `<span class="badge badge-flip">Red to Blue Flip</span>`;
-                }
-                if (isTrue(cand.Statewide)) {
-                    badgesHTML += `<span class="badge badge-statewide">Statewide</span>`;
-                }
+                if (isTrue(cand.Incumbent)) badgesHTML += `<span class="badge badge-incumbent">Incumbent</span>`;
+                if (isTrue(cand.Critical_Race)) badgesHTML += `<span class="badge badge-critical">Critical Race</span>`;
+                if (isTrue(cand.Red_To_Blue)) badgesHTML += `<span class="badge badge-flip">Red to Blue Flip</span>`;
+                if (isTrue(cand.Statewide)) badgesHTML += `<span class="badge badge-statewide">Statewide</span>`;
+
+                // Photo
                 const photoSrc = cand.Photo && cand.Photo.startsWith('http') 
                     ? cand.Photo 
                     : 'https://via.placeholder.com/150?text=No+Photo';
-                // Optional Website Button
-                const websiteHTML = cand.Website 
-                    ? `<a href="${cand.Website}" target="_blank" class="website-btn">Website</a>` 
+
+                // Buttons (Website & Donate)
+                // We create variables for each button, checking if the link exists
+                const websiteBtn = cand.Website 
+                    ? `<a href="${cand.Website}" target="_blank" class="action-btn website-btn">Website</a>` 
                     : '';
+                
+                // Expects a column named "Donate" in your CSV
+                const donateBtn = cand.Donate 
+                    ? `<a href="${cand.Donate}" target="_blank" class="action-btn donate-btn">Donate</a>` 
+                    : '';
+
                 card.innerHTML = `
                     <img src="${photoSrc}" alt="${cand.Name}" class="candidate-photo">
                     <div class="badge-container">${badgesHTML}</div>
                     <h3 class="candidate-name">${cand.Name}</h3>
                     <div class="candidate-office">${cand.Office}</div>
                     <div class="candidate-blurb">${cand.Blurb}</div>
-                    ${websiteHTML}
+                    <div class="btn-group">
+                        ${websiteBtn}
+                        ${donateBtn}
+                    </div>
                 `;
                 container.appendChild(card);
             });
         }
-// Robust CSV Parser (Handles commas inside quotes AND spaces in names)
+
+        // Robust CSV Parser
         function parseCSV(text) {
             const lines = text.split('\n').filter(l => l.trim());
             const headers = lines[0].split(',').map(h => h.trim());
+            
             return lines.slice(1).map(line => {
-                // This magic pattern splits by commas, BUT ignores commas inside quotes.
-                // It also preserves empty fields (e.g., "Name,,Website" -> Name, "", Website)
                 const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
                 let obj = {};
                 headers.forEach((h, i) => {
                     let val = values[i] || '';
-                    // Clean up quotes (remove surrounding "")
                     obj[h] = val.replace(/^"|"$/g, '').trim(); 
                 });
                 return obj;
