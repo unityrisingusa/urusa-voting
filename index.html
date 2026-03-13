@@ -17,7 +17,8 @@
             --badge-yellow: #f1c40f;
             --badge-text-dark: #2c3e50;
             --btn-blue: #63b3ed;
-            --btn-donate: #bc5b76; /* High visibility red/orange for donations */
+            --btn-donate: #bc5b76;
+            --featured-red: #e74c3c; /* New red for featured banner */
         }
 
         body {
@@ -41,12 +42,7 @@
         }
 
         .full-width { grid-column: 1 / -1; }
-
-        .input-group {
-            display: flex;
-            flex-direction: column;
-        }
-
+        .input-group { display: flex; flex-direction: column; }
         .input-group label {
             font-size: 0.8rem;
             font-weight: 700;
@@ -91,6 +87,18 @@
             .full-width-mobile { grid-column: 1 / -1; }
         }
 
+        /* --- SECTION HEADERS --- */
+        .section-header {
+            text-align: center;
+            color: #112140;
+            font-family: var(--brand-font);
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 25px;
+            font-size: 1.5rem;
+        }
+
         /* Results Grid */
         .results-grid {
             display: grid;
@@ -100,7 +108,7 @@
             margin: 0 auto;
         }
 
-        /* CARD DESIGN */
+        /* --- CARD DESIGN --- */
         .candidate-card {
             background-color: var(--card-bg);
             color: var(--text-color);
@@ -111,19 +119,37 @@
             align-items: center;
             text-align: center;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            position: relative;
+            position: relative; /* Essential for the featured banner */
+            overflow: hidden; /* Keeps the banner inside the rounded corners */
+        }
+
+        /* THE FEATURED BANNER */
+        .featured-banner {
+            position: absolute;
+            top: 0;
+            left: 0;
+            background-color: var(--featured-red);
+            color: white;
+            padding: 6px 16px;
+            font-size: 0.8rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom-right-radius: 12px;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+            z-index: 10;
         }
 
         .candidate-photo {
             width: 140px;
             height: 140px;
-            border-radius: 50%;       /* Makes it a circle */
-            object-fit: cover;        /* Crops the image to fill the circle without stretching */
-            object-position: center top; /* Focuses on the top-center (where faces usually are) */
+            border-radius: 50%;
+            object-fit: cover;
+            object-position: center top;
             border: 4px solid white;
             margin-bottom: 20px;
             background-color: #eee;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1); /* Adds a subtle shadow for depth */
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
 
         .candidate-name {
@@ -177,16 +203,15 @@
             flex-grow: 1; 
         }
 
-        /* --- BUTTON GROUP FOR WEBSITE & DONATE --- */
         .btn-group {
             display: flex;
             gap: 10px;
             width: 100%;
-            margin-top: auto; /* Pushes buttons to bottom of flex container */
+            margin-top: auto;
         }
 
         .action-btn {
-            flex: 1; /* Makes buttons equal width */
+            flex: 1;
             color: var(--badge-text-dark);
             text-decoration: none;
             padding: 12px 0;
@@ -199,22 +224,35 @@
             font-size: 0.9rem;
         }
         
-        .action-btn:hover {
-            transform: translateY(-2px);
-            opacity: 0.9;
-        }
-
-        .website-btn {
-            background-color: var(--btn-blue);
-        }
-
-        .donate-btn {
-            background-color: var(--btn-donate);
-            color: white; /* White text looks better on red */
-        }
+        .action-btn:hover { transform: translateY(-2px); opacity: 0.9; }
+        .website-btn { background-color: var(--btn-blue); }
+        .donate-btn { background-color: var(--btn-donate); color: white; }
         
+        /* --- PAGINATION STYLING --- */
+        .pagination-controls {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 30px;
+        }
+
+        .page-btn {
+            padding: 8px 16px;
+            border: 2px solid var(--card-bg);
+            background-color: white;
+            color: var(--card-bg);
+            border-radius: 6px;
+            font-family: var(--brand-font);
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .page-btn:hover { background-color: #e2e8f0; }
+        .page-btn.active { background-color: var(--card-bg); color: white; }
+
         .no-results { grid-column: 1 / -1; text-align: center; color: #555; margin-top: 30px; }
-        .loading { text-align: center; display: none; width: 100%; color: #555; }
+        .loading { text-align: center; display: none; width: 100%; color: #555; font-weight: bold; margin-bottom: 20px;}
     </style>
 </head>
 <body>
@@ -257,66 +295,146 @@
         <button class="search-btn" onclick="findCandidates()">Find Candidates</button>
     </div>
 
-    <div id="loading" class="loading">Scanning district maps...</div>
-    <div id="results" class="results-grid"></div>
+    <div id="loading" class="loading">Loading candidates...</div>
+
+    <div id="featured-container">
+        <h2 class="section-header">Featured Endorsements</h2>
+        <div id="featured-grid" class="results-grid"></div>
+        <div id="featured-pagination" class="pagination-controls"></div>
+    </div>
+
+    <div id="search-container" style="display: none;">
+        <h2 class="section-header">Your Local Candidates</h2>
+        <div id="results" class="results-grid"></div>
+        <button onclick="clearSearch()" class="page-btn" style="display: block; margin: 30px auto 0 auto;">Clear Search & View Featured</button>
+    </div>
 
     <script>
         // --- CONFIGURATION ---
         const GOOGLE_API_KEY = 'AIzaSyDnGniYDB8m3w7vHeqjbOOkyD49UzOkh4g'; 
         const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ_Gi48boVKmhDzM_eTo20i9pVlJ4Q9sue3uQ31FMb5B8Oq-c04diYAIDVfLaznJjQ34tey6h2WHtI5/pub?gid=0&single=true&output=csv';
+        const CARDS_PER_PAGE = 6;
 
+        // --- GLOBAL STATE ---
+        let allCandidates = [];
+        let featuredCandidates = [];
+        let currentPage = 1;
+
+        // --- INITIALIZATION ON LOAD ---
+        document.addEventListener('DOMContentLoaded', async () => {
+            const loadingDiv = document.getElementById('loading');
+            loadingDiv.style.display = 'block';
+
+            try {
+                // Fetch the spreadsheet ONCE when the page loads
+                const sheetResponse = await fetch(SHEET_CSV_URL);
+                if (!sheetResponse.ok) throw new Error("Failed to load endorsements");
+                const csvText = await sheetResponse.text();
+                
+                allCandidates = parseCSV(csvText);
+                
+                // Filter for featured candidates (checking if column exists and is TRUE)
+                featuredCandidates = allCandidates.filter(c => c.Featured && c.Featured.toUpperCase() === 'TRUE');
+                
+                // Sort featured by rank if available
+                featuredCandidates.sort((a, b) => (parseInt(a.Rank) || 999) - (parseInt(b.Rank) || 999));
+
+                renderFeaturedPage(1);
+
+            } catch (error) {
+                console.error("Initialization error:", error);
+                document.getElementById('featured-grid').innerHTML = `<div class="no-results">Unable to load candidates right now.</div>`;
+            } finally {
+                loadingDiv.style.display = 'none';
+            }
+        });
+
+        // --- PAGINATION RENDERER ---
+        function renderFeaturedPage(page) {
+            currentPage = page;
+            const container = document.getElementById('featured-grid');
+            const paginator = document.getElementById('featured-pagination');
+            
+            container.innerHTML = '';
+            paginator.innerHTML = '';
+
+            if (featuredCandidates.length === 0) {
+                container.innerHTML = `<div class="no-results">No featured candidates at this time. Use the search to find local races.</div>`;
+                return;
+            }
+
+            // Calculate start and end index for the current page
+            const startIndex = (page - 1) * CARDS_PER_PAGE;
+            const endIndex = startIndex + CARDS_PER_PAGE;
+            const paginatedItems = featuredCandidates.slice(startIndex, endIndex);
+
+            // Render cards
+            paginatedItems.forEach(cand => {
+                container.innerHTML += generateCardHTML(cand, true); // true = show featured banner
+            });
+
+            // Render pagination buttons if we have more than 1 page
+            const totalPages = Math.ceil(featuredCandidates.length / CARDS_PER_PAGE);
+            if (totalPages > 1) {
+                for (let i = 1; i <= totalPages; i++) {
+                    const btn = document.createElement('button');
+                    btn.className = `page-btn ${i === currentPage ? 'active' : ''}`;
+                    btn.innerText = i;
+                    btn.onclick = () => renderFeaturedPage(i);
+                    paginator.appendChild(btn);
+                }
+            }
+        }
+
+        // --- LOCALIZED SEARCH ---
         async function findCandidates() {
-            // 1. GET VALUES FROM SEPARATE BOXES
             const street = document.getElementById('inputStreet').value.trim();
             const city = document.getElementById('inputCity').value.trim();
             const state = document.getElementById('inputState').value;
             const zip = document.getElementById('inputZip').value.trim();
             
-            // 2. VALIDATION
             if (!street || !city || !zip) {
                 return alert("Please fill in Street, City, and Zip Code.");
             }
 
-            // 3. CONCATENATION
             const fullAddress = `${street}, ${city}, ${state} ${zip}`;
-            
-            const resultsDiv = document.getElementById('results');
             const loadingDiv = document.getElementById('loading');
+            const searchContainer = document.getElementById('search-container');
+            const featuredContainer = document.getElementById('featured-container');
+            const resultsDiv = document.getElementById('results');
             
             resultsDiv.innerHTML = '';
+            featuredContainer.style.display = 'none'; // Hide featured
+            searchContainer.style.display = 'block'; // Show local search
             loadingDiv.style.display = 'block';
+            loadingDiv.innerText = "Scanning district maps...";
 
             try {
-                // Fetch Data
-                const sheetResponse = await fetch(SHEET_CSV_URL);
-                if (!sheetResponse.ok) throw new Error("Failed to load endorsements");
-                const csvText = await sheetResponse.text();
-                const endorsedCandidates = parseCSV(csvText);
-
-                // Geocode Address
+                // Geocode Address (We no longer need to fetch the CSV here!)
                 const civicUrl = `https://civicinfo.googleapis.com/civicinfo/v2/divisionsByAddress?address=${encodeURIComponent(fullAddress)}&key=${GOOGLE_API_KEY}`;
                 const civicResponse = await fetch(civicUrl);
                 
-                if (!civicResponse.ok) throw new Error("Google API Error");
+                if (!civicResponse.ok) throw new Error("Google API Error. Please check the address.");
                 const civicData = await civicResponse.json();
                 
                 if (!civicData.divisions) throw new Error("Address found, but no district info returned.");
 
-                // Match & Filter
-                let matches = endorsedCandidates.filter(candidate => {
+                // Match & Filter from the globally stored allCandidates array
+                let matches = allCandidates.filter(candidate => {
                     if (!candidate.OCDID) return false;
                     const cleanID = candidate.OCDID.trim();
                     return civicData.divisions[cleanID] !== undefined;
                 });
 
-                // Sort by Rank
-                matches.sort((a, b) => {
-                    const rankA = parseInt(a.Rank) || 999;
-                    const rankB = parseInt(b.Rank) || 999;
-                    return rankA - rankB;
-                });
+                matches.sort((a, b) => (parseInt(a.Rank) || 999) - (parseInt(b.Rank) || 999));
 
-                displayResults(matches);
+                if (matches.length === 0) {
+                    resultsDiv.innerHTML = `<div class="no-results"><h3>No endorsements in your area yet.</h3></div>`;
+                } else {
+                    matches.forEach(cand => {
+                        resultsDiv.innerHTML += generateCardHTML(cand, false); // false = no featured banner
+                    });
+                }
 
             } catch (error) {
                 console.error(error);
@@ -326,43 +444,40 @@
             }
         }
 
-        function displayResults(candidates) {
-            const container = document.getElementById('results');
+        // --- CLEAR SEARCH ---
+        function clearSearch() {
+            document.getElementById('inputStreet').value = '';
+            document.getElementById('inputCity').value = '';
+            document.getElementById('inputZip').value = '';
             
-            if (candidates.length === 0) {
-                container.innerHTML = `<div class="no-results"><h3>No endorsements in your area yet.</h3></div>`;
-                return;
-            }
+            document.getElementById('search-container').style.display = 'none';
+            document.getElementById('featured-container').style.display = 'block';
+        }
 
-            candidates.forEach(cand => {
-                const card = document.createElement('div');
-                card.className = 'candidate-card';
+        // --- HTML CARD TEMPLATE GENERATOR ---
+        function generateCardHTML(cand, isFeatured) {
+            let badgesHTML = '';
+            const isTrue = (val) => val && val.toUpperCase() === 'TRUE';
+            
+            if (isTrue(cand.Incumbent)) badgesHTML += `<span class="badge badge-incumbent">Incumbent</span>`;
+            if (isTrue(cand.Critical_Race)) badgesHTML += `<span class="badge badge-critical">Critical Race</span>`;
+            if (isTrue(cand.Red_To_Blue)) badgesHTML += `<span class="badge badge-flip">Red to Blue Flip</span>`;
+            if (isTrue(cand.Statewide)) badgesHTML += `<span class="badge badge-statewide">Statewide</span>`;
 
-                // Badges
-                let badgesHTML = '';
-                const isTrue = (val) => val && val.toUpperCase() === 'TRUE';
-                if (isTrue(cand.Incumbent)) badgesHTML += `<span class="badge badge-incumbent">Incumbent</span>`;
-                if (isTrue(cand.Critical_Race)) badgesHTML += `<span class="badge badge-critical">Critical Race</span>`;
-                if (isTrue(cand.Red_To_Blue)) badgesHTML += `<span class="badge badge-flip">Red to Blue Flip</span>`;
-                if (isTrue(cand.Statewide)) badgesHTML += `<span class="badge badge-statewide">Statewide</span>`;
+            const photoSrc = cand.Photo && cand.Photo.startsWith('http') 
+                ? cand.Photo 
+                : 'https://via.placeholder.com/150?text=No+Photo';
 
-                // Photo
-                const photoSrc = cand.Photo && cand.Photo.startsWith('http') 
-                    ? cand.Photo 
-                    : 'https://via.placeholder.com/150?text=No+Photo';
+            const websiteBtn = cand.Website 
+                ? `<a href="${cand.Website}" target="_blank" class="action-btn website-btn">Website</a>` : '';
+            const donateBtn = cand.Donate 
+                ? `<a href="${cand.Donate}" target="_blank" class="action-btn donate-btn">Donate</a>` : '';
 
-                // Buttons (Website & Donate)
-                // We create variables for each button, checking if the link exists
-                const websiteBtn = cand.Website 
-                    ? `<a href="${cand.Website}" target="_blank" class="action-btn website-btn">Website</a>` 
-                    : '';
-                
-                // Expects a column named "Donate" in your CSV
-                const donateBtn = cand.Donate 
-                    ? `<a href="${cand.Donate}" target="_blank" class="action-btn donate-btn">Donate</a>` 
-                    : '';
+            const featuredBanner = isFeatured ? `<div class="featured-banner">Featured</div>` : '';
 
-                card.innerHTML = `
+            return `
+                <div class="candidate-card">
+                    ${featuredBanner}
                     <img src="${photoSrc}" alt="${cand.Name}" class="candidate-photo">
                     <div class="badge-container">${badgesHTML}</div>
                     <h3 class="candidate-name">${cand.Name}</h3>
@@ -372,12 +487,11 @@
                         ${websiteBtn}
                         ${donateBtn}
                     </div>
-                `;
-                container.appendChild(card);
-            });
+                </div>
+            `;
         }
 
-        // Robust CSV Parser
+        // --- CSV PARSER ---
         function parseCSV(text) {
             const lines = text.split('\n').filter(l => l.trim());
             const headers = lines[0].split(',').map(h => h.trim());
