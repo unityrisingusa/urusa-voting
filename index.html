@@ -18,7 +18,8 @@
             --badge-text-dark: #2c3e50;
             --btn-blue: #63b3ed;
             --btn-donate: #bc5b76;
-            --featured-red: #e74c3c; /* New red for featured banner */
+            --featured-red: #e74c3c; 
+            --youth-purple: #9b59b6; /* New vibrant color for Youth */
         }
 
         body {
@@ -59,6 +60,8 @@
             font-size: 16px;
             background-color: white;
             transition: border-color 0.2s;
+            width: 100%;
+            box-sizing: border-box;
         }
         
         input[type="text"]:focus, select:focus {
@@ -99,10 +102,11 @@
             font-size: 1.5rem;
         }
 
-        /* Results Grid */
+        /* --- RESULTS GRID (Switched to Flexbox for Centering & Scaling) --- */
         .results-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
             gap: 25px;
             max-width: 1200px;
             margin: 0 auto;
@@ -113,17 +117,20 @@
             background-color: var(--card-bg);
             color: var(--text-color);
             border-radius: 12px;
-            padding: 30px 20px;
+            padding: 35px 20px 30px 20px; /* Slight top padding increase to accommodate state flag */
             display: flex;
             flex-direction: column;
             align-items: center;
             text-align: center;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            position: relative; /* Essential for the featured banner */
-            overflow: hidden; /* Keeps the banner inside the rounded corners */
+            position: relative; 
+            overflow: hidden; 
+            width: 100%;
+            max-width: 320px; /* Ensures cards don't get massive, but flex fluidly on mobile */
+            box-sizing: border-box;
         }
 
-        /* THE FEATURED BANNER */
+        /* THE FEATURED BANNER (Top Left) */
         .featured-banner {
             position: absolute;
             top: 0;
@@ -137,6 +144,22 @@
             letter-spacing: 1px;
             border-bottom-right-radius: 12px;
             box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+            z-index: 10;
+        }
+
+        /* THE STATE FLAG (Top Right) */
+        .state-flag {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background-color: var(--btn-blue);
+            color: var(--card-bg);
+            padding: 6px 14px;
+            font-size: 1.1rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            border-bottom-left-radius: 12px;
+            box-shadow: -2px 2px 5px rgba(0,0,0,0.1);
             z-index: 10;
         }
 
@@ -184,6 +207,7 @@
         .badge-critical { background-color: var(--badge-yellow); color: var(--badge-text-dark); }
         .badge-statewide { background-color: #1a252f; border: 1px solid #4a5568; }
         .badge-flip { background: linear-gradient(90deg, #c0392b 0%, #2980b9 100%); }
+        .badge-youth { background-color: var(--youth-purple); } /* New Youth Badge */
 
         .candidate-office {
             background-color: rgba(0,0,0,0.3);
@@ -251,7 +275,7 @@
         .page-btn:hover { background-color: #e2e8f0; }
         .page-btn.active { background-color: var(--card-bg); color: white; }
 
-        .no-results { grid-column: 1 / -1; text-align: center; color: #555; margin-top: 30px; }
+        .no-results { grid-column: 1 / -1; text-align: center; color: #555; margin-top: 30px; width: 100%; }
         .loading { text-align: center; display: none; width: 100%; color: #555; font-weight: bold; margin-bottom: 20px;}
     </style>
 </head>
@@ -333,10 +357,10 @@
                 
                 allCandidates = parseCSV(csvText);
                 
-                // Filter for featured candidates (checking if column exists and is TRUE)
+                // Filter for featured candidates
                 featuredCandidates = allCandidates.filter(c => c.Featured && c.Featured.toUpperCase() === 'TRUE');
                 
-                // Sort featured by rank if available
+                // Sort featured by rank
                 featuredCandidates.sort((a, b) => (parseInt(a.Rank) || 999) - (parseInt(b.Rank) || 999));
 
                 renderFeaturedPage(1);
@@ -363,7 +387,7 @@
                 return;
             }
 
-            // Calculate start and end index for the current page
+            // Calculate start and end index
             const startIndex = (page - 1) * CARDS_PER_PAGE;
             const endIndex = startIndex + CARDS_PER_PAGE;
             const paginatedItems = featuredCandidates.slice(startIndex, endIndex);
@@ -373,7 +397,7 @@
                 container.innerHTML += generateCardHTML(cand, true); // true = show featured banner
             });
 
-            // Render pagination buttons if we have more than 1 page
+            // Render pagination buttons
             const totalPages = Math.ceil(featuredCandidates.length / CARDS_PER_PAGE);
             if (totalPages > 1) {
                 for (let i = 1; i <= totalPages; i++) {
@@ -410,7 +434,7 @@
             loadingDiv.innerText = "Scanning district maps...";
 
             try {
-                // Geocode Address (We no longer need to fetch the CSV here!)
+                // Geocode Address
                 const civicUrl = `https://civicinfo.googleapis.com/civicinfo/v2/divisionsByAddress?address=${encodeURIComponent(fullAddress)}&key=${GOOGLE_API_KEY}`;
                 const civicResponse = await fetch(civicUrl);
                 
@@ -419,7 +443,7 @@
                 
                 if (!civicData.divisions) throw new Error("Address found, but no district info returned.");
 
-                // Match & Filter from the globally stored allCandidates array
+                // Match & Filter
                 let matches = allCandidates.filter(candidate => {
                     if (!candidate.OCDID) return false;
                     const cleanID = candidate.OCDID.trim();
@@ -463,6 +487,7 @@
             if (isTrue(cand.Critical_Race)) badgesHTML += `<span class="badge badge-critical">Critical Race</span>`;
             if (isTrue(cand.Red_To_Blue)) badgesHTML += `<span class="badge badge-flip">Red to Blue Flip</span>`;
             if (isTrue(cand.Statewide)) badgesHTML += `<span class="badge badge-statewide">Statewide</span>`;
+            if (isTrue(cand.Youth)) badgesHTML += `<span class="badge badge-youth">Youth Candidate</span>`; // New Badge injected here
 
             const photoSrc = cand.Photo && cand.Photo.startsWith('http') 
                 ? cand.Photo 
@@ -473,11 +498,14 @@
             const donateBtn = cand.Donate 
                 ? `<a href="${cand.Donate}" target="_blank" class="action-btn donate-btn">Donate</a>` : '';
 
+            // Inject Featured Banner and State Flag if data exists
             const featuredBanner = isFeatured ? `<div class="featured-banner">Featured</div>` : '';
+            const stateFlag = cand.State ? `<div class="state-flag">${cand.State}</div>` : ''; 
 
             return `
                 <div class="candidate-card">
                     ${featuredBanner}
+                    ${stateFlag}
                     <img src="${photoSrc}" alt="${cand.Name}" class="candidate-photo">
                     <div class="badge-container">${badgesHTML}</div>
                     <h3 class="candidate-name">${cand.Name}</h3>
