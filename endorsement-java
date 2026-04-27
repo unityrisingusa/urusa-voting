@@ -131,7 +131,7 @@ function parseCSV(str) {
         });
 
     } catch (error) {
-        rosterContainer.innerHTML = '<div class="dossier-box content-center" style="grid-column: 1 / -1;"><h3 class="candidate-name" style="color: #e40932 !important;">UNABLE TO SECURE CONNECTION TO SECURE ROSTER.</h3></div>';
+        rosterContainer.innerHTML = '<div class="dossier-box content-center" style="grid-column: 1 / -1;"><h3 class="candidate-name" style="color: #e40932 !important;">LOAD FAILED PLEASE RELOAD OR CONTACT POLITICAL@UNITYRISINGUSA.ORG.</h3></div>';
         console.error("Endorsement Fetch Failed:", error);
     }
 })();
