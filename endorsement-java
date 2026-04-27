@@ -57,15 +57,23 @@ function parseCSV(str) {
             // 1. IMAGE
             const photoSrc = data.Photo ? data.Photo : fallbackImage;
 
-            // 2. BADGE LOGIC
+            // 2. UPGRADED BADGE LOGIC (Supports custom colors)
             const activeBadges = [];
-            if(data.Incumbent === 'TRUE' || data.Incumbent === 'Yes') activeBadges.push('INCUMBENT');
-            if(data.Critical_Race === 'TRUE' || data.Critical_Race === 'Yes') activeBadges.push('CRITICAL RACE');
-            if(data.Red_To_Blue === 'TRUE' || data.Red_To_Blue === 'Yes') activeBadges.push('RED TO BLUE');
-            if(data.Statewide === 'TRUE' || data.Statewide === 'Yes') activeBadges.push('STATEWIDE');
-            if(data.Youth === 'TRUE' || data.Youth === 'Yes') activeBadges.push('YOUTH');
             
-            const badgesHTML = activeBadges.map(b => `<span class="tactical-stamp" style="background-color: #112140; color: #ffffff; padding: 4px 8px; font-family: 'DM Sans', sans-serif; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; height: fit-content;">${b}</span>`).join('');
+            // Winner badge pushed first so it leads the cluster
+            if(data.Winner === 'TRUE' || data.Winner === 'Yes') {
+                activeBadges.push({ text: 'WINNER', bg: '#27ae60' }); // Tactical Green
+            }
+            
+            // Standard Badges
+            if(data.Incumbent === 'TRUE' || data.Incumbent === 'Yes') activeBadges.push({ text: 'INCUMBENT', bg: '#112140' });
+            if(data.Critical_Race === 'TRUE' || data.Critical_Race === 'Yes') activeBadges.push({ text: 'CRITICAL RACE', bg: '#112140' });
+            if(data.Red_To_Blue === 'TRUE' || data.Red_To_Blue === 'Yes') activeBadges.push({ text: 'RED TO BLUE', bg: '#112140' });
+            if(data.Statewide === 'TRUE' || data.Statewide === 'Yes') activeBadges.push({ text: 'STATEWIDE', bg: '#112140' });
+            if(data.Youth === 'TRUE' || data.Youth === 'Yes') activeBadges.push({ text: 'YOUTH', bg: '#112140' });
+            
+            // Map the objects to HTML
+            const badgesHTML = activeBadges.map(b => `<span class="tactical-stamp" style="background-color: ${b.bg}; color: #ffffff; padding: 4px 8px; font-family: 'DM Sans', sans-serif; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; height: fit-content;">${b.text}</span>`).join('');
 
             // 3. THE 50/50 BANNER LOGIC (Absolute Top)
             let topBannerHTML = '';
@@ -105,8 +113,6 @@ function parseCSV(str) {
             }
 
             // 5. THE BULLETPROOF CARD ARCHITECTURE
-            // 'overflow: hidden' ensures the absolute banners don't bleed out of the card.
-            // Min-heights on the titles and badges ensure the layout never collapses.
             const cardHTML = `
                 <div class="dossier-box content-stack" style="overflow: hidden; position: relative; height: 100%;">
                     ${topBannerHTML}
@@ -140,7 +146,7 @@ function parseCSV(str) {
         });
 
     } catch (error) {
-        rosterContainer.innerHTML = '<div class="dossier-box content-center" style="grid-column: 1 / -1;"><h3 class="candidate-name" style="color: #e40932 !important;">LOADING FAILED. PLEASE REFRESH</h3></div>';
+        rosterContainer.innerHTML = '<div class="dossier-box content-center" style="grid-column: 1 / -1;"><h3 class="candidate-name" style="color: #e40932 !important;">ERROR. PLEASE RELOAD PAGE.</h3></div>';
         console.error("Endorsement Fetch Failed:", error);
     }
 })();
