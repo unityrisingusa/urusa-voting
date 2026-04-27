@@ -1,0 +1,137 @@
+// The exact CSV export URL for your specific Google Sheet
+const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ_Gi48boVKmhDzM_eTo20i9pVlJ4Q9sue3uQ31FMb5B8Oq-c04diYAIDVfLaznJjQ34tey6h2WHtI5/pub?gid=0&single=true&output=csv';
+const rosterContainer = document.getElementById('dynamic-roster');
+
+// The fallback image
+const fallbackImage = 'https://placehold.co/400x400/1a1c22/ffffff?text=NO+PHOTO+ON+FILE';
+
+// A tiny, bulletproof CSV parser
+function parseCSV(str) {
+    const arr = [];
+    let quote = false;  
+    for (let row = 0, col = 0, c = 0; c < str.length; c++) {
+        let cc = str[c], nc = str[c+1];
+        arr[row] = arr[row] || [];
+        arr[row][col] = arr[row][col] || '';
+        if (cc == '"' && quote && nc == '"') { arr[row][col] += cc; ++c; continue; }
+        if (cc == '"') { quote = !quote; continue; }
+        if (cc == ',' && !quote) { ++col; continue; }
+        if (cc == '\r' && nc == '\n' && !quote) { ++row; col = 0; ++c; continue; }
+        if (cc == '\n' && !quote) { ++row; col = 0; continue; }
+        if (cc == '\r' && !quote) { ++row; col = 0; continue; }
+        arr[row][col] += cc;
+    }
+    return arr;
+}
+
+// Fire immediately
+(async function loadEndorsements() {
+    if (!rosterContainer) return; 
+    
+    try {
+        const response = await fetch(csvUrl);
+        const csvText = await response.text();
+        
+        // Parse CSV and extract headers
+        const rows = parseCSV(csvText);
+        const headers = rows[0].map(h => h.trim());
+        const rawCandidates = rows.slice(1).filter(row => row.length > 1);
+
+        // Convert rows to an array of objects
+        let candidates = rawCandidates.map(row => {
+            const data = {};
+            headers.forEach((header, index) => {
+                data[header] = row[index] ? row[index].trim() : '';
+            });
+            return data;
+        }).filter(data => data.Name); // Skip empty rows
+
+        // THE UPGRADED SORTING ENGINE: Ascending Order (1 is highest)
+        candidates.sort((a, b) => {
+            const rankA = parseInt(a.Rank) || 9999;
+            const rankB = parseInt(b.Rank) || 9999;
+            return rankA - rankB; 
+        });
+
+        rosterContainer.innerHTML = ''; // Clear loading message
+
+        candidates.forEach(data => {
+            // 1. IMAGE LOGIC
+            const photoSrc = data.Photo ? data.Photo : fallbackImage;
+
+            // 2. BADGE LOGIC
+            let badgesHTML = '';
+            const activeBadges = [];
+            if(data.Featured === 'TRUE' || data.Featured === 'Yes') activeBadges.push('FEATURED');
+            if(data.Youth === 'TRUE' || data.Youth === 'Yes') activeBadges.push('YOUTH');
+            if(data.Incumbent === 'TRUE' || data.Incumbent === 'Yes') activeBadges.push('INCUMBENT');
+            if(data.Critical_Race === 'TRUE' || data.Critical_Race === 'Yes') activeBadges.push('CRITICAL RACE');
+            if(data.Red_To_Blue === 'TRUE' || data.Red_To_Blue === 'Yes') activeBadges.push('RED TO BLUE');
+            if(data.Statewide === 'TRUE' || data.Statewide === 'Yes') activeBadges.push('STATEWIDE');
+            
+            if(activeBadges.length > 0) {
+                // Utilizing inline flex to ensure the badges cluster cleanly in the center
+                badgesHTML = `<div class="badge-cluster" style="display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-bottom: 15px;">` + 
+                    activeBadges.map(b => `<span class="tactical-stamp" style="background-color: #112140; color: #ffffff; padding: 4px 8px; font-family: 'DM Sans', sans-serif; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;">${b}</span>`).join('') + 
+                `</div>`;
+            }
+
+            // 3. FLAG LOGIC (Restored & Pinned to Top Right)
+            const stateFlag = data.State ? `<div class="state-flag" style="position: absolute; top: 0; right: 0; background-color: #6bbef2; color: #112140; padding: 6px 14px; font-family: 'Anton', sans-serif; font-size: 1.1rem; font-weight: 900; text-transform: uppercase; border-bottom-left-radius: 8px;">${data.State}</div>` : ''; 
+            
+            const featuredBanner = (data.Featured === 'TRUE' || data.Featured === 'Yes') ? `<div class="featured-banner" style="position: absolute; top: 0; left: 0; background-color: #e40932; color: #ffffff; padding: 6px 16px; font-family: 'Anton', sans-serif; font-size: 1.1rem; font-weight: 900; text-transform: uppercase; border-bottom-right-radius: 8px;">Featured</div>` : '';
+
+            // 4. BUTTON LOGIC
+            let buttonsHTML = '';
+            if (data.Website && data.Donate) {
+                buttonsHTML = `
+                    <div class="grid-50-50" style="width: 100%;">
+                        <div class="unity-btn btn-sky btn-block">
+                            <a href="${data.Website}" target="_blank">WEBSITE</a>
+                        </div>
+                        <div class="unity-btn btn-red btn-block">
+                            <a href="${data.Donate}" target="_blank">DONATE</a>
+                        </div>
+                    </div>
+                `;
+            } else if (data.Website) {
+                buttonsHTML = `
+                    <div class="unity-btn btn-sky btn-block">
+                        <a href="${data.Website}" target="_blank">WEBSITE</a>
+                    </div>
+                `;
+            } else if (data.Donate) {
+                buttonsHTML = `
+                    <div class="unity-btn btn-red btn-block">
+                        <a href="${data.Donate}" target="_blank">DONATE</a>
+                    </div>
+                `;
+            }
+
+            // 5. BUILD THE CARD (Injecting the flags and badges)
+            const cardHTML = `
+                <div class="dossier-box content-stack">
+                    ${featuredBanner}
+                    ${stateFlag}
+                    
+                    <div class="content-center" style="margin-top: 20px;">
+                        <img src="${photoSrc}" class="candidate-headshot sm" alt="${data.Name}">
+                        <h2 class="candidate-name">${data.Name}</h2>
+                        <p class="candidate-race">${data.Office}</p>
+                        ${badgesHTML}
+                    </div>
+                    
+                    <div class="flex-spacer"></div> 
+                    
+                    ${buttonsHTML}
+                </div>
+            `;
+            
+            rosterContainer.innerHTML += cardHTML;
+        });
+
+    } catch (error) {
+        rosterContainer.innerHTML = '<div class="dossier-box content-center" style="grid-column: 1 / -1;"><h3 class="candidate-name" style="color: #e40932 !important;">UNABLE TO SECURE CONNECTION TO SECURE ROSTER.</h3></div>';
+        console.error("Endorsement Fetch Failed:", error);
+    }
+})();
