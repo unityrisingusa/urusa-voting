@@ -32,98 +32,107 @@ function parseCSV(str) {
         const response = await fetch(csvUrl);
         const csvText = await response.text();
         
-        // Parse CSV and extract headers
         const rows = parseCSV(csvText);
         const headers = rows[0].map(h => h.trim());
         const rawCandidates = rows.slice(1).filter(row => row.length > 1);
 
-        // Convert rows to an array of objects
         let candidates = rawCandidates.map(row => {
             const data = {};
             headers.forEach((header, index) => {
                 data[header] = row[index] ? row[index].trim() : '';
             });
             return data;
-        }).filter(data => data.Name); // Skip empty rows
+        }).filter(data => data.Name);
 
-        // THE UPGRADED SORTING ENGINE: Ascending Order (1 is highest)
+        // Sort Ascending Order (1 is highest)
         candidates.sort((a, b) => {
             const rankA = parseInt(a.Rank) || 9999;
             const rankB = parseInt(b.Rank) || 9999;
             return rankA - rankB; 
         });
 
-        rosterContainer.innerHTML = ''; // Clear loading message
+        rosterContainer.innerHTML = ''; 
 
         candidates.forEach(data => {
-            // 1. IMAGE LOGIC
+            // 1. IMAGE
             const photoSrc = data.Photo ? data.Photo : fallbackImage;
 
             // 2. BADGE LOGIC
-            let badgesHTML = '';
             const activeBadges = [];
-            if(data.Featured === 'TRUE' || data.Featured === 'Yes') activeBadges.push('FEATURED');
-            if(data.Youth === 'TRUE' || data.Youth === 'Yes') activeBadges.push('YOUTH');
             if(data.Incumbent === 'TRUE' || data.Incumbent === 'Yes') activeBadges.push('INCUMBENT');
             if(data.Critical_Race === 'TRUE' || data.Critical_Race === 'Yes') activeBadges.push('CRITICAL RACE');
             if(data.Red_To_Blue === 'TRUE' || data.Red_To_Blue === 'Yes') activeBadges.push('RED TO BLUE');
             if(data.Statewide === 'TRUE' || data.Statewide === 'Yes') activeBadges.push('STATEWIDE');
+            if(data.Youth === 'TRUE' || data.Youth === 'Yes') activeBadges.push('YOUTH');
             
-            if(activeBadges.length > 0) {
-                // Utilizing inline flex to ensure the badges cluster cleanly in the center
-                badgesHTML = `<div class="badge-cluster" style="display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-bottom: 15px;">` + 
-                    activeBadges.map(b => `<span class="tactical-stamp" style="background-color: #112140; color: #ffffff; padding: 4px 8px; font-family: 'DM Sans', sans-serif; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;">${b}</span>`).join('') + 
-                `</div>`;
-            }
+            const badgesHTML = activeBadges.map(b => `<span class="tactical-stamp" style="background-color: #112140; color: #ffffff; padding: 4px 8px; font-family: 'DM Sans', sans-serif; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; height: fit-content;">${b}</span>`).join('');
 
-            // 3. FLAG LOGIC (Restored & Pinned to Top Right)
-            const stateFlag = data.State ? `<div class="state-flag" style="position: absolute; top: 0; right: 0; background-color: #6bbef2; color: #112140; padding: 6px 14px; font-family: 'Anton', sans-serif; font-size: 1.1rem; font-weight: 900; text-transform: uppercase; border-bottom-left-radius: 8px;">${data.State}</div>` : ''; 
+            // 3. THE 50/50 BANNER LOGIC (Absolute Top)
+            let topBannerHTML = '';
+            const isFeatured = (data.Featured === 'TRUE' || data.Featured === 'Yes');
+            const hasState = !!data.State;
             
-            const featuredBanner = (data.Featured === 'TRUE' || data.Featured === 'Yes') ? `<div class="featured-banner" style="position: absolute; top: 0; left: 0; background-color: #e40932; color: #ffffff; padding: 6px 16px; font-family: 'Anton', sans-serif; font-size: 1.1rem; font-weight: 900; text-transform: uppercase; border-bottom-right-radius: 8px;">Featured</div>` : '';
+            if (isFeatured || hasState) {
+                let featuredDiv = isFeatured ? `<div style="flex: 1; background-color: #e40932; color: #ffffff; padding: 8px 10px; font-family: 'DM Sans', sans-serif; font-weight: 900; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 1px; text-align: center;">Featured</div>` : '';
+                
+                let stateDiv = hasState ? `<div style="flex: 1; background-color: #6bbef2; color: #112140; padding: 8px 10px; font-family: 'DM Sans', sans-serif; font-weight: 900; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 1px; text-align: center;">${data.State}</div>` : '';
+                
+                // Adds a tactical black line between them if both are present
+                let divider = (isFeatured && hasState) ? `<div style="width: 2px; background-color: #1a1c23;"></div>` : '';
+
+                topBannerHTML = `
+                    <div style="position: absolute; top: 0; left: 0; width: 100%; display: flex; flex-direction: row; border-bottom: 2px solid #1a1c23; z-index: 10;">
+                        ${featuredDiv}
+                        ${divider}
+                        ${stateDiv}
+                    </div>
+                `;
+            }
 
             // 4. BUTTON LOGIC
             let buttonsHTML = '';
             if (data.Website && data.Donate) {
                 buttonsHTML = `
                     <div class="grid-50-50" style="width: 100%;">
-                        <div class="unity-btn btn-sky btn-block">
-                            <a href="${data.Website}" target="_blank">WEBSITE</a>
-                        </div>
-                        <div class="unity-btn btn-red btn-block">
-                            <a href="${data.Donate}" target="_blank">DONATE</a>
-                        </div>
+                        <div class="unity-btn btn-sky btn-block"><a href="${data.Website}" target="_blank">WEBSITE</a></div>
+                        <div class="unity-btn btn-red btn-block"><a href="${data.Donate}" target="_blank">DONATE</a></div>
                     </div>
                 `;
             } else if (data.Website) {
-                buttonsHTML = `
-                    <div class="unity-btn btn-sky btn-block">
-                        <a href="${data.Website}" target="_blank">WEBSITE</a>
-                    </div>
-                `;
+                buttonsHTML = `<div class="unity-btn btn-sky btn-block"><a href="${data.Website}" target="_blank">WEBSITE</a></div>`;
             } else if (data.Donate) {
-                buttonsHTML = `
-                    <div class="unity-btn btn-red btn-block">
-                        <a href="${data.Donate}" target="_blank">DONATE</a>
-                    </div>
-                `;
+                buttonsHTML = `<div class="unity-btn btn-red btn-block"><a href="${data.Donate}" target="_blank">DONATE</a></div>`;
             }
 
-            // 5. BUILD THE CARD (Injecting the flags and badges)
+            // 5. THE BULLETPROOF CARD ARCHITECTURE
+            // 'overflow: hidden' ensures the absolute banners don't bleed out of the card.
+            // Min-heights on the titles and badges ensure the layout never collapses.
             const cardHTML = `
-                <div class="dossier-box content-stack">
-                    ${featuredBanner}
-                    ${stateFlag}
+                <div class="dossier-box content-stack" style="overflow: hidden; position: relative; height: 100%;">
+                    ${topBannerHTML}
                     
-                    <div class="content-center" style="margin-top: 20px;">
-                        <img src="${photoSrc}" class="candidate-headshot sm" alt="${data.Name}">
-                        <h2 class="candidate-name">${data.Name}</h2>
-                        <p class="candidate-race">${data.Office}</p>
-                        ${badgesHTML}
+                    <div class="content-center" style="margin-top: ${(isFeatured || hasState) ? '20px' : '0'}; width: 100%;">
+                        <img src="${photoSrc}" class="candidate-headshot sm" alt="${data.Name}" style="margin-bottom: 15px;">
+                        
+                        <div style="min-height: 75px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; width: 100%;">
+                            <h2 class="candidate-name" style="margin-bottom: 5px; text-align: center; line-height: 1.1;">${data.Name}</h2>
+                            <p class="candidate-race" style="font-family: 'DM Sans', sans-serif; font-weight: 700; text-align: center; margin: 0; color: #5A6557;">${data.Office}</p>
+                        </div>
+                        
+                        <div class="badge-cluster" style="min-height: 55px; display: flex; flex-wrap: wrap; justify-content: center; align-content: flex-start; gap: 8px; width: 100%; margin-bottom: 10px;">
+                            ${badgesHTML}
+                        </div>
+                    </div>
+                    
+                    <div class="candidate-blurb" style="font-family: 'DM Sans', sans-serif; font-size: 0.95rem; line-height: 1.5; font-weight: 500; flex-grow: 1; text-align: center; width: 100%;">
+                        ${data.Blurb || ''}
                     </div>
                     
                     <div class="flex-spacer"></div> 
                     
-                    ${buttonsHTML}
+                    <div style="width: 100%; margin-top: 20px;">
+                        ${buttonsHTML}
+                    </div>
                 </div>
             `;
             
@@ -131,7 +140,7 @@ function parseCSV(str) {
         });
 
     } catch (error) {
-        rosterContainer.innerHTML = '<div class="dossier-box content-center" style="grid-column: 1 / -1;"><h3 class="candidate-name" style="color: #e40932 !important;">LOAD FAILED PLEASE RELOAD OR CONTACT POLITICAL@UNITYRISINGUSA.ORG.</h3></div>';
+        rosterContainer.innerHTML = '<div class="dossier-box content-center" style="grid-column: 1 / -1;"><h3 class="candidate-name" style="color: #e40932 !important;">UNABLE TO SECURE CONNECTION TO SECURE ROSTER.</h3></div>';
         console.error("Endorsement Fetch Failed:", error);
     }
 })();
