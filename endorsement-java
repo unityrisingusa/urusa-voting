@@ -121,9 +121,13 @@ function parseCSV(str) {
                         <img src="${photoSrc}" class="candidate-headshot sm" alt="${data.Name}" style="margin-bottom: 15px;">
                         
                         <div style="min-height: 75px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; width: 100%;">
+                            <div class="spacer"></div>
                             <h2 class="candidate-name" style="margin-bottom: 5px; text-align: center; line-height: 1.1;">${data.Name}</h2>
+                            <div class="spacer space--small"></div>
                             <p class="candidate-race" style="font-family: 'DM Sans', sans-serif; font-weight: 700; text-align: center; margin: 0; color: #5A6557;">${data.Office}</p>
                         </div>
+
+                        <div class="spacer"></div>
                         
                         <div class="badge-cluster" style="min-height: 55px; display: flex; flex-wrap: wrap; justify-content: center; align-content: flex-start; gap: 8px; width: 100%; margin-bottom: 10px;">
                             ${badgesHTML}
